@@ -1,10 +1,25 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:news_app/core/routes/app_routes.dart';
+import 'package:news_app/features/data/api/app_api.dart';
+import 'package:news_app/features/data/model/news_model.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Articles> articles = [];
+  bool isLoading = true;
+  
+  void initState() {
+    super.initState();
+    getAllArticles();
+  }
   @override
    Widget build(BuildContext context) {
     
@@ -19,21 +34,32 @@ class HomeScreen extends StatelessWidget {
           color:Colors.white,
         ))
       ),
-      body:ListView.separated(
+      body:isLoading ? Center(child: CircularProgressIndicator(),) :
+      ListView.separated(
         padding: EdgeInsets.symmetric(horizontal:15),
-        itemBuilder: (context, index) => NewsItemWidgets(),
+        itemBuilder: (context, index) => NewsItemWidgets(article: articles[index],),
         separatorBuilder: (context, index) => SizedBox(height: 15),
-        itemCount:10,
+        itemCount:articles.length,
       )
        
     );
+  }
+  void getAllArticles() async {
+   isLoading = true;
+    final news = await AppApi.getNews();
+    
+    setState(() {
+      articles = news.articles ?? [];
+      isLoading = false;
+    });
   }
 }
 
 class NewsItemWidgets extends StatelessWidget {
   const NewsItemWidgets({
-    super.key,
+    super.key,required this.article,
   });
+  final Articles article;
 
   @override
   Widget build(BuildContext context) {
@@ -47,20 +73,25 @@ class NewsItemWidgets extends StatelessWidget {
        child: Column(
          crossAxisAlignment:CrossAxisAlignment.start,
          children: [
-        CustomImageNews(height: 200),
-       Text("Europe",style:TextStyle(
+        CustomImageNews(height: 200, image: article.urlToImage),
+       Text(article.author ?? "",style:TextStyle(
          fontSize:14,
          fontWeight:FontWeight.w400,
          color:Color(0xffB0B3B8),
        )
         ),
         SizedBox(height: 4),
-         Text("RUssian Warship MosKva Sinks in Black sea",style:TextStyle(
+         Text(article.title ?? "",style:TextStyle(
          fontSize:18,
          fontWeight:FontWeight.w400,
-         color:Color(0xffB0B3B8)
+         color:Color(0xffB0B3B8),
+
       
-        ))
+        ),
+        maxLines: 1,
+        overflow:.ellipsis,
+        ),
+        
         
        ],)
             ),
@@ -72,9 +103,13 @@ class CustomImageNews extends StatelessWidget {
   const CustomImageNews({
     super.key,
     required this.height,
+    required this.image,
+    
   });
 
   final double height;
+  final String? image;
+  
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +117,7 @@ class CustomImageNews extends StatelessWidget {
      borderRadius:BorderRadiusGeometry.circular(12),
       child:
       CachedNetworkImage(
-        imageUrl: image,
+        imageUrl: image ?? "",
         placeholder: (context, url) => Column(
           mainAxisAlignment:MainAxisAlignment.center,
           children:[
