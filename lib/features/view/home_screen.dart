@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:news_app/core/network/api_result.dart';
 import 'package:news_app/core/routes/app_routes.dart';
 import 'package:news_app/features/data/api/app_api.dart';
 import 'package:news_app/features/data/model/news_model.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Articles> articles = [];
   bool isLoading = true;
+  String? error;
   
   void initState() {
     super.initState();
@@ -34,7 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
           color:Colors.white,
         ))
       ),
-      body:isLoading ? Center(child: CircularProgressIndicator(),) :
+      body:isLoading ? Center(child: CircularProgressIndicator(),) : error != null ? Center(child: Text(error ?? "",style:TextStyle(
+        fontSize:20,
+     
+        color:Colors.red,
+      )),) :
       ListView.separated(
         padding: EdgeInsets.symmetric(horizontal:15),
         itemBuilder: (context, index) => NewsItemWidgets(article: articles[index],),
@@ -49,7 +55,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final news = await AppApi.getNews();
     
     setState(() {
-      articles = news.articles ?? [];
+      switch(news){
+        case Success<NewsModel>():
+        
+          articles = news.data.articles ?? [];
+          break;
+        case Error<NewsModel>():
+       
+          error = news.errorMessage;
+          break;
+      }
       isLoading = false;
     });
   }
@@ -63,10 +78,11 @@ class NewsItemWidgets extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+   
     return InkWell(
       onTap:(){
         Navigator.of(context).
-        pushNamed(AppRoutes.details);
+        pushNamed(AppRoutes.details, arguments: article);
       },
       child: Container(
        padding: EdgeInsets.all(8),
